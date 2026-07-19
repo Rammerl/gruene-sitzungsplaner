@@ -4,12 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-const HOURS_START = 8;
-const HOURS_END = 23; // exclusive upper boundary
 const HOUR_PX = 32;
-const COLUMN_HEIGHT = (HOURS_END - HOURS_START) * HOUR_PX;
 const CLICK_THRESHOLD_PX = 6;
 const MOBILE_QUERY = "(max-width: 700px)";
+const START_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0..23
+const END_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i + 1); // 1..24
 
 type Category = "verfuegbar" | "nach_absprache" | "blockiert";
 
@@ -20,9 +19,9 @@ const CATEGORY_LABEL: Record<Category, string> = {
   blockiert: "Blockiert",
 };
 const CATEGORY_COLOR: Record<Category, string> = {
-  verfuegbar: "#a9d8b4",
-  nach_absprache: "#f4d58d",
-  blockiert: "#e59a9a",
+  verfuegbar: "#93d5ab",
+  nach_absprache: "#f6cf76",
+  blockiert: "#f0a0a0",
 };
 
 type Member = { id: string; name: string };
@@ -36,9 +35,9 @@ type Block = {
 };
 type Draft = { weekday: number; start: number; end: number };
 
-function yToHour(y: number) {
-  const raw = HOURS_START + y / HOUR_PX;
-  return Math.min(HOURS_END, Math.max(HOURS_START, Math.round(raw)));
+function yToHour(y: number, hoursStart: number, hoursEnd: number) {
+  const raw = hoursStart + y / HOUR_PX;
+  return Math.min(hoursEnd, Math.max(hoursStart, Math.round(raw)));
 }
 
 export default function SurveyView({ token }: { token: string }) {
@@ -46,6 +45,15 @@ export default function SurveyView({ token }: { token: string }) {
   const [surveyId, setSurveyId] = useState<string | null>(null);
   const [surveyName, setSurveyName] = useState("");
   const [notFound, setNotFound] = useState(false);
+
+  const [hoursStart, setHoursStart] = useState(8);
+  const [hoursEnd, setHoursEnd] = useState(23);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsStart, setSettingsStart] = useState(8);
+  const [settingsEnd, setSettingsEnd] = useState(23);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const columnHeight = (hoursEnd - hoursStart) * HOUR_PX;
 
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string>("");
@@ -90,7 +98,7 @@ export default function SurveyView({ token }: { token: string }) {
     setLoading(true);
     const { data: survey, error } = await supabase
       .from("surveys")
-      .select("id,name")
+      .select("id,name,start_hour,end_hour")
       .eq("token", token)
       .maybeSingle();
     if (error || !survey) {
@@ -100,6 +108,10 @@ export default function SurveyView({ token }: { token: string }) {
     }
     setSurveyId(survey.id);
     setSurveyName(survey.name);
+    setHoursStart(survey.start_hour);
+    setHoursEnd(survey.end_hour);
+    setSettingsStart(survey.start_hour);
+    setSettingsEnd(survey.end_hour);
     const { data: memberRows } = await supabase
       .from("members")
       .select("id,name")
@@ -107,6 +119,23 @@ export default function SurveyView({ token }: { token: string }) {
       .order("name");
     setMembers(memberRows ?? []);
     setLoading(false);
+  }
+
+  async function saveSettings() {
+    if (!surveyId || settingsEnd <= settingsStart) return;
+    setSavingSettings(true);
+    const { error } = await supabase
+      .from("surveys")
+      .update({ start_hour: settingsStart, end_hour: settingsEnd })
+      .eq("id", surveyId);
+    setSavingSettings(false);
+    if (error) {
+      alert("Konnte Zeitraum nicht speichern.");
+      return;
+    }
+    setHoursStart(settingsStart);
+    setHoursEnd(settingsEnd);
+    setShowSettings(false);
   }
 
   async function addMember() {
@@ -185,11 +214,11 @@ export default function SurveyView({ token }: { token: string }) {
     if (!selectedMemberId) return;
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
-    const anchor = yToHour(e.clientY - rect.top);
+    const anchor = yToHour(e.clientY - rect.top, hoursStart, hoursEnd);
     setDraft({ weekday, start: anchor, end: anchor + 1 });
 
     function onMove(ev: PointerEvent) {
-      const current = yToHour(ev.clientY - rect.top);
+      const current = yToHour(ev.clientY - rect.top, hoursStart, hoursEnd);
       let start = Math.min(anchor, current);
       let end = Math.max(anchor, current);
       if (end === start) end = start + 1;
@@ -231,15 +260,15 @@ export default function SurveyView({ token }: { token: string }) {
 
       if (mode === "move") {
         let newStart = origStart + deltaHours;
-        newStart = Math.max(HOURS_START, Math.min(HOURS_END - duration, newStart));
+        newStart = Math.max(hoursStart, Math.min(hoursEnd - duration, newStart));
         updateBlockLocal(block.id, { start_hour: newStart, end_hour: newStart + duration });
       } else if (mode === "resize-top") {
         let newStart = origStart + deltaHours;
-        newStart = Math.max(HOURS_START, Math.min(origEnd - 1, newStart));
+        newStart = Math.max(hoursStart, Math.min(origEnd - 1, newStart));
         updateBlockLocal(block.id, { start_hour: newStart });
       } else if (mode === "resize-bottom") {
         let newEnd = origEnd + deltaHours;
-        newEnd = Math.min(HOURS_END, Math.max(origStart + 1, newEnd));
+        newEnd = Math.min(hoursEnd, Math.max(origStart + 1, newEnd));
         updateBlockLocal(block.id, { end_hour: newEnd });
       }
     }
@@ -266,20 +295,20 @@ export default function SurveyView({ token }: { token: string }) {
 
   const hourMarks = useMemo(() => {
     const marks = [];
-    for (let h = HOURS_START; h <= HOURS_END; h++) marks.push(h);
+    for (let h = hoursStart; h <= hoursEnd; h++) marks.push(h);
     return marks;
-  }, []);
+  }, [hoursStart, hoursEnd]);
 
   const bestInfo = useMemo(() => {
     const total = members.length;
     if (view !== "overview" || total === 0) return { max: 0, ranges: [] as { weekday: number; start: number; end: number }[] };
-    const grid: number[][] = WEEKDAYS.map(() => Array(HOURS_END - HOURS_START).fill(0));
-    const blocked: boolean[][] = WEEKDAYS.map(() => Array(HOURS_END - HOURS_START).fill(false));
+    const grid: number[][] = WEEKDAYS.map(() => Array(hoursEnd - hoursStart).fill(0));
+    const blocked: boolean[][] = WEEKDAYS.map(() => Array(hoursEnd - hoursStart).fill(false));
     overviewBlocks.forEach((b) => {
       for (let h = b.start_hour; h < b.end_hour; h++) {
-        if (h < HOURS_START || h >= HOURS_END) continue;
-        if (b.category === "verfuegbar") grid[b.weekday][h - HOURS_START]++;
-        if (b.category === "blockiert") blocked[b.weekday][h - HOURS_START] = true;
+        if (h < hoursStart || h >= hoursEnd) continue;
+        if (b.category === "verfuegbar") grid[b.weekday][h - hoursStart]++;
+        if (b.category === "blockiert") blocked[b.weekday][h - hoursStart] = true;
       }
     });
     let max = 0;
@@ -293,7 +322,7 @@ export default function SurveyView({ token }: { token: string }) {
     grid.forEach((row, weekday) => {
       let rangeStart: number | null = null;
       for (let i = 0; i < row.length; i++) {
-        const h = HOURS_START + i;
+        const h = hoursStart + i;
         if (row[i] === max && !blocked[weekday][i]) {
           if (rangeStart === null) rangeStart = h;
         } else if (rangeStart !== null) {
@@ -301,10 +330,10 @@ export default function SurveyView({ token }: { token: string }) {
           rangeStart = null;
         }
       }
-      if (rangeStart !== null) ranges.push({ weekday, start: rangeStart, end: HOURS_END });
+      if (rangeStart !== null) ranges.push({ weekday, start: rangeStart, end: hoursEnd });
     });
     return { max, ranges };
-  }, [overviewBlocks, members, view]);
+  }, [overviewBlocks, members, view, hoursStart, hoursEnd]);
 
   function renderDayColumn(weekday: number, showHeader: boolean) {
     const day = WEEKDAYS[weekday];
@@ -313,7 +342,7 @@ export default function SurveyView({ token }: { token: string }) {
         {showHeader && <div className="day-col-header">{day}</div>}
         <div
           className="day-col"
-          style={{ height: COLUMN_HEIGHT }}
+          style={{ height: columnHeight }}
           onPointerDown={(e) => handleColumnPointerDown(e, weekday)}
         >
           {view === "edit" &&
@@ -324,7 +353,7 @@ export default function SurveyView({ token }: { token: string }) {
                   key={b.id}
                   className="block"
                   style={{
-                    top: (b.start_hour - HOURS_START) * HOUR_PX,
+                    top: (b.start_hour - hoursStart) * HOUR_PX,
                     height: (b.end_hour - b.start_hour) * HOUR_PX,
                     background: CATEGORY_COLOR[b.category],
                   }}
@@ -353,7 +382,7 @@ export default function SurveyView({ token }: { token: string }) {
             <div
               className="block draft"
               style={{
-                top: (draft.start - HOURS_START) * HOUR_PX,
+                top: (draft.start - hoursStart) * HOUR_PX,
                 height: (draft.end - draft.start) * HOUR_PX,
                 background: CATEGORY_COLOR.verfuegbar,
               }}
@@ -364,7 +393,7 @@ export default function SurveyView({ token }: { token: string }) {
             (() => {
               const dayBlocks = overviewBlocks.filter((b) => b.weekday === weekday);
               const cells = [];
-              for (let h = HOURS_START; h < HOURS_END; h++) {
+              for (let h = hoursStart; h < hoursEnd; h++) {
                 const names: Record<Category, string[]> = { verfuegbar: [], nach_absprache: [], blockiert: [] };
                 dayBlocks.forEach((b) => {
                   if (b.start_hour <= h && h < b.end_hour) names[b.category].push(b.memberName);
@@ -379,7 +408,6 @@ export default function SurveyView({ token }: { token: string }) {
                 } else if (total > 0 && availableCount === total) {
                   bg = CATEGORY_COLOR.verfuegbar;
                 }
-                const isBest = bestInfo.max > 0 && names.blockiert.length === 0 && availableCount === bestInfo.max;
                 const title =
                   [
                     names.verfuegbar.length ? `Verfügbar: ${names.verfuegbar.join(", ")}` : "",
@@ -391,9 +419,9 @@ export default function SurveyView({ token }: { token: string }) {
                 cells.push(
                   <div
                     key={h}
-                    className={`overview-cell${isBest ? " best-cell" : ""}`}
+                    className="overview-cell"
                     title={title}
-                    style={{ top: (h - HOURS_START) * HOUR_PX, height: HOUR_PX, background: bg }}
+                    style={{ top: (h - hoursStart) * HOUR_PX, height: HOUR_PX, background: bg }}
                   >
                     {availableCount > 0 && <span>{availableCount}</span>}
                     {names.nach_absprache.length > 0 && (
@@ -428,8 +456,56 @@ export default function SurveyView({ token }: { token: string }) {
 
   return (
     <div className="container">
-      <h1>{surveyName}</h1>
-      <p className="subtitle">Trag ein, wann du normalerweise Zeit hast – die Übersicht zeigt, wann die Gruppe kann.</p>
+      <div className="page-header">
+        <div>
+          <h1>{surveyName}</h1>
+          <p className="subtitle">Trag ein, wann du normalerweise Zeit hast – die Übersicht zeigt, wann die Gruppe kann.</p>
+        </div>
+        <button
+          className="settings-toggle"
+          onClick={() => {
+            setSettingsStart(hoursStart);
+            setSettingsEnd(hoursEnd);
+            setShowSettings((s) => !s);
+          }}
+        >
+          ⚙ Zeitraum
+        </button>
+      </div>
+
+      {showSettings && (
+        <div className="panel settings-panel">
+          <div className="row time-range-row">
+            <label className="time-range-label">
+              Von
+              <select value={settingsStart} onChange={(e) => setSettingsStart(Number(e.target.value))}>
+                {START_HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}:00
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="time-range-label">
+              Bis
+              <select value={settingsEnd} onChange={(e) => setSettingsEnd(Number(e.target.value))}>
+                {END_HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}:00
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button onClick={saveSettings} disabled={savingSettings || settingsEnd <= settingsStart}>
+              Speichern
+            </button>
+            <button className="secondary" onClick={() => setShowSettings(false)}>
+              Abbrechen
+            </button>
+          </div>
+          {settingsEnd <= settingsStart && <p className="hint">"Bis" muss nach "Von" liegen.</p>}
+        </div>
+      )}
 
       <div className="panel">
         <div className="row">
@@ -502,9 +578,9 @@ export default function SurveyView({ token }: { token: string }) {
 
       <div className="calendar-wrapper">
         <div className="calendar">
-          <div className="time-gutter" style={{ height: COLUMN_HEIGHT }}>
+          <div className="time-gutter" style={{ height: columnHeight }}>
             {hourMarks.map((h) => (
-              <div key={h} className="hour-mark" style={{ top: (h - HOURS_START) * HOUR_PX }}>
+              <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
                 {h}:00
               </div>
             ))}

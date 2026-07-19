@@ -1,3 +1,24 @@
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --border: #e8e8e4;
+  --border-soft: #eef0ec;
+  --text: #22231f;
+  --text-muted: #6b6f66;
+  --primary: #3a7d4c;
+  --primary-hover: #326b41;
+  --primary-soft: #eaf4ec;
+  --danger: #b3261e;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 7px;
+  --shadow-sm: 0 1px 2px rgba(20, 30, 20, 0.05);
+  --shadow-md: 0 6px 20px rgba(20, 30, 20, 0.07);
+  --available: #93d5ab;
+  --tentative: #f6cf76;
+  --blocked: #f0a0a0;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -5,128 +26,216 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f4f5f0;
-  color: #1a1a1a;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 32px 20px 72px;
 }
 
 h1 {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
 }
 
 .subtitle {
-  color: #555;
+  color: var(--text-muted);
   margin-top: 0;
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .panel {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 18px 20px;
   margin-bottom: 20px;
+}
+
+.settings-panel {
+  background: var(--primary-soft);
+  border-color: #d7e8da;
 }
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-select, input[type="text"], button {
-  font-size: 0.95rem;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+.time-range-row {
+  margin-top: 4px;
+}
+
+.time-range-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+select,
+input[type="text"],
+button {
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+select:focus,
+input[type="text"]:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
 button {
-  background: #2f6f3e;
+  background: var(--primary);
   color: white;
-  border: none;
+  border: 1px solid var(--primary);
   cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+  box-shadow: var(--shadow-sm);
 }
 
 button:hover {
-  background: #275c33;
+  background: var(--primary-hover);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
 }
 
 button.secondary {
-  background: white;
-  color: #2f6f3e;
-  border: 1px solid #2f6f3e;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 button.secondary:hover {
-  background: #eef5ee;
+  background: #f2f2ee;
+}
+
+.settings-toggle {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settings-toggle:hover {
+  background: #f2f2ee;
 }
 
 .tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 18px;
+  background: #eceee9;
+  padding: 4px;
+  border-radius: 999px;
+  width: fit-content;
 }
 
 .tabs button {
-  background: #eee;
-  color: #333;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.tabs button:hover {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .tabs button.active {
-  background: #2f6f3e;
-  color: white;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .legend {
   display: flex;
-  gap: 16px;
-  margin: 4px 0 16px;
+  gap: 18px;
+  margin: 4px 0 18px;
   font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .legend-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   display: inline-block;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .calendar-wrapper {
   overflow-x: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  background: var(--surface);
 }
 
 .calendar {
   display: flex;
   min-width: 700px;
+  padding: 8px 12px 12px;
 }
 
 .time-gutter {
-  width: 44px;
+  width: 46px;
   flex-shrink: 0;
   position: relative;
+  overflow: hidden;
+  padding-top: 30px;
 }
 
 .time-gutter .hour-mark {
   position: absolute;
   left: 0;
-  right: 4px;
+  right: 8px;
   font-size: 0.7rem;
-  color: #777;
+  color: var(--text-muted);
   transform: translateY(-50%);
   text-align: right;
 }
@@ -134,6 +243,7 @@ button.secondary:hover {
 .day-columns {
   flex: 1;
   display: flex;
+  gap: 4px;
 }
 
 .day-col-wrap {
@@ -144,42 +254,38 @@ button.secondary:hover {
 .day-col-header {
   text-align: center;
   font-weight: 600;
-  font-size: 0.8rem;
-  padding: 4px 0;
-  background: #f0f0eb;
-  border: 1px solid #e2e2e2;
-  border-bottom: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 0 10px;
+  color: var(--text-muted);
 }
 
 .day-col {
   position: relative;
-  border: 1px solid #e2e2e2;
-  border-left: none;
+  border-radius: var(--radius-sm);
+  background-color: #fafaf8;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent,
     transparent calc(32px - 1px),
-    #ececec calc(32px - 1px),
-    #ececec 32px
+    var(--border-soft) calc(32px - 1px),
+    var(--border-soft) 32px
   );
   cursor: crosshair;
   user-select: none;
   touch-action: none;
 }
 
-.day-col-wrap:first-child .day-col {
-  border-left: 1px solid #e2e2e2;
-}
-
 .block {
   position: absolute;
-  left: 2px;
-  right: 2px;
-  border-radius: 4px;
+  left: 3px;
+  right: 3px;
+  border-radius: 8px;
   font-size: 0.7rem;
   color: #1a1a1a;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   cursor: grab;
   touch-action: none;
 }
@@ -188,7 +294,7 @@ button.secondary:hover {
   position: absolute;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 7px;
   cursor: ns-resize;
 }
 
@@ -201,30 +307,32 @@ button.secondary:hover {
 }
 
 .block .label {
-  padding: 2px 4px;
+  padding: 3px 6px;
   pointer-events: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
 }
 
 .block .delete-btn {
   position: absolute;
-  top: 1px;
-  right: 2px;
-  opacity: 0.8;
+  top: 2px;
+  right: 3px;
+  opacity: 0.75;
   transition: opacity 0.15s;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.18);
   border: none;
-  border-radius: 3px;
+  border-radius: 50%;
   width: 18px;
   height: 18px;
   line-height: 18px;
   font-size: 13px;
   padding: 0;
-  color: #333;
+  color: #fff;
   cursor: pointer;
   touch-action: none;
+  box-shadow: none;
 }
 
 .block:hover .delete-btn {
@@ -240,7 +348,6 @@ button.secondary:hover {
   position: absolute;
   left: 0;
   right: 0;
-  border-bottom: 1px dashed transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,10 +360,6 @@ button.secondary:hover {
 .overview-cell .tentative-count {
   color: #6b4e00;
   font-weight: 500;
-}
-
-.overview-cell.best-cell {
-  box-shadow: inset 0 0 0 2px #d4a017;
 }
 
 .best-panel ul {
@@ -274,23 +377,28 @@ button.secondary:hover {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 600;
 }
 
 .mobile-day-switcher button {
-  padding: 4px 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
 }
 
 .hint {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-muted);
   margin-top: 8px;
 }
 
 @media (max-width: 700px) {
   .container {
-    padding: 16px 8px 48px;
+    padding: 20px 10px 56px;
+  }
+
+  .page-header {
+    flex-direction: column;
   }
 
   .row {
@@ -305,7 +413,11 @@ button.secondary:hover {
   }
 
   .tabs {
-    flex-direction: column;
+    width: 100%;
+  }
+
+  .tabs button {
+    flex: 1;
   }
 
   .legend {

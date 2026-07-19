@@ -12,8 +12,13 @@ function generateToken(length = 10) {
   return Array.from(bytes, (b) => TOKEN_ALPHABET[b % TOKEN_ALPHABET.length]).join("");
 }
 
+const START_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0..23
+const END_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i + 1); // 1..24
+
 export default function Home() {
   const [name, setName] = useState("");
+  const [startHour, setStartHour] = useState(8);
+  const [endHour, setEndHour] = useState(23);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
@@ -21,10 +26,16 @@ export default function Home() {
   async function handleCreate() {
     const trimmed = name.trim();
     if (!trimmed) return;
+    if (endHour <= startHour) {
+      setError('"Bis" muss nach "Von" liegen.');
+      return;
+    }
     setCreating(true);
     setError(null);
     const token = generateToken();
-    const { error: insertError } = await supabase.from("surveys").insert({ name: trimmed, token });
+    const { error: insertError } = await supabase
+      .from("surveys")
+      .insert({ name: trimmed, token, start_hour: startHour, end_hour: endHour });
     setCreating(false);
     if (insertError) {
       setError("Konnte Umfrage nicht anlegen. Bitte erneut versuchen.");
@@ -56,6 +67,28 @@ export default function Home() {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             />
+          </div>
+          <div className="row time-range-row">
+            <label className="time-range-label">
+              Von
+              <select value={startHour} onChange={(e) => setStartHour(Number(e.target.value))}>
+                {START_HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}:00
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="time-range-label">
+              Bis
+              <select value={endHour} onChange={(e) => setEndHour(Number(e.target.value))}>
+                {END_HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}:00
+                  </option>
+                ))}
+              </select>
+            </label>
             <button onClick={handleCreate} disabled={creating || !name.trim()}>
               Umfrage erstellen
             </button>
