@@ -225,12 +225,18 @@ button.secondary:hover {
 .time-gutter {
   width: 46px;
   flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-  padding-top: 30px;
 }
 
-.time-gutter .hour-mark {
+.gutter-header-spacer {
+  width: 100%;
+}
+
+.hour-marks {
+  position: relative;
+  overflow: hidden;
+}
+
+.hour-marks .hour-mark {
   position: absolute;
   left: 0;
   right: 8px;
@@ -252,12 +258,13 @@ button.secondary:hover {
 }
 
 .day-col-header {
+  height: 28px;
+  line-height: 28px;
   text-align: center;
   font-weight: 600;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 6px 0 10px;
   color: var(--text-muted);
 }
 

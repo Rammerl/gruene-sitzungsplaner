@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const HOUR_PX = 32;
+const HEADER_HEIGHT = 28;
 const CLICK_THRESHOLD_PX = 6;
 const MOBILE_QUERY = "(max-width: 700px)";
 const START_HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0..23
@@ -578,12 +579,15 @@ export default function SurveyView({ token }: { token: string }) {
 
       <div className="calendar-wrapper">
         <div className="calendar">
-          <div className="time-gutter" style={{ height: columnHeight }}>
-            {hourMarks.map((h) => (
-              <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
-                {h}:00
-              </div>
-            ))}
+          <div className="time-gutter" style={{ height: HEADER_HEIGHT + columnHeight }}>
+            <div className="gutter-header-spacer" style={{ height: HEADER_HEIGHT }} />
+            <div className="hour-marks" style={{ height: columnHeight }}>
+              {hourMarks.map((h) => (
+                <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
+                  {h}:00
+                </div>
+              ))}
+            </div>
           </div>
           <div className="day-columns">
             {isMobile
