@@ -1,0 +1,145 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f4f5f0;
+  color: #1a1a1a;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #555;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+select, input[type="text"], button {
+  font-size: 0.95rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #2f6f3e;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #275c33;
+}
+
+button.secondary {
+  background: white;
+  color: #2f6f3e;
+  border: 1px solid #2f6f3e;
+}
+
+button.secondary:hover {
+  background: #eef5ee;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tabs button {
+  background: #eee;
+  color: #333;
+}
+
+.tabs button.active {
+  background: #2f6f3e;
+  color: white;
+}
+
+.grid-wrapper {
+  overflow-x: auto;
+}
+
+table.grid {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 640px;
+}
+
+table.grid th, table.grid td {
+  border: 1px solid #e2e2e2;
+  text-align: center;
+  padding: 0;
+  height: 28px;
+  font-size: 0.8rem;
+}
+
+table.grid th {
+  background: #f0f0eb;
+  font-weight: 600;
+  padding: 6px 4px;
+}
+
+table.grid td.hour-label {
+  background: #f9f9f6;
+  color: #666;
+  width: 56px;
+  font-size: 0.75rem;
+}
+
+td.cell {
+  cursor: pointer;
+  user-select: none;
+}
+
+td.cell.available {
+  background: #a9d8b4;
+}
+
+td.cell.unavailable {
+  background: white;
+}
+
+td.cell:hover {
+  outline: 2px solid #2f6f3e;
+  outline-offset: -2px;
+}
+
+td.cell.readonly {
+  cursor: default;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 8px;
+}
