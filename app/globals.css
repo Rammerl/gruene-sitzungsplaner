@@ -233,7 +233,6 @@ button.secondary:hover {
 
 .hour-marks {
   position: relative;
-  overflow: hidden;
 }
 
 .hour-marks .hour-mark {
@@ -242,8 +241,12 @@ button.secondary:hover {
   right: 8px;
   font-size: 0.7rem;
   color: var(--text-muted);
-  transform: translateY(-50%);
+  transform: translateY(2px);
   text-align: right;
+}
+
+.hour-marks .hour-mark.last {
+  transform: translateY(calc(-100% - 2px));
 }
 
 .day-columns {

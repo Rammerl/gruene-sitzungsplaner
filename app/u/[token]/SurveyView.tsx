@@ -583,7 +583,11 @@ export default function SurveyView({ token }: { token: string }) {
             <div className="gutter-header-spacer" style={{ height: HEADER_HEIGHT }} />
             <div className="hour-marks" style={{ height: columnHeight }}>
               {hourMarks.map((h) => (
-                <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
+                <div
+                  key={h}
+                  className={`hour-mark${h === hoursEnd ? " last" : ""}`}
+                  style={{ top: (h - hoursStart) * HOUR_PX }}
+                >
                   {h}:00
                 </div>
               ))}
