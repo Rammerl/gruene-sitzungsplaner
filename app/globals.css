@@ -85,57 +85,171 @@ button.secondary:hover {
   color: white;
 }
 
-.grid-wrapper {
+.legend {
+  display: flex;
+  gap: 16px;
+  margin: 4px 0 16px;
+  font-size: 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.calendar-wrapper {
   overflow-x: auto;
 }
 
-table.grid {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 640px;
+.calendar {
+  display: flex;
+  min-width: 700px;
 }
 
-table.grid th, table.grid td {
-  border: 1px solid #e2e2e2;
+.time-gutter {
+  width: 44px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.time-gutter .hour-mark {
+  position: absolute;
+  left: 0;
+  right: 4px;
+  font-size: 0.7rem;
+  color: #777;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+.day-columns {
+  flex: 1;
+  display: flex;
+}
+
+.day-col-wrap {
+  flex: 1;
+  min-width: 80px;
+}
+
+.day-col-header {
   text-align: center;
-  padding: 0;
-  height: 28px;
-  font-size: 0.8rem;
-}
-
-table.grid th {
-  background: #f0f0eb;
   font-weight: 600;
-  padding: 6px 4px;
+  font-size: 0.8rem;
+  padding: 4px 0;
+  background: #f0f0eb;
+  border: 1px solid #e2e2e2;
+  border-bottom: none;
 }
 
-table.grid td.hour-label {
-  background: #f9f9f6;
-  color: #666;
-  width: 56px;
-  font-size: 0.75rem;
-}
-
-td.cell {
-  cursor: pointer;
+.day-col {
+  position: relative;
+  border: 1px solid #e2e2e2;
+  border-left: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(32px - 1px),
+    #ececec calc(32px - 1px),
+    #ececec 32px
+  );
+  cursor: crosshair;
   user-select: none;
 }
 
-td.cell.available {
-  background: #a9d8b4;
+.day-col-wrap:first-child .day-col {
+  border-left: 1px solid #e2e2e2;
 }
 
-td.cell.unavailable {
-  background: white;
+.block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: #1a1a1a;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  cursor: grab;
 }
 
-td.cell:hover {
-  outline: 2px solid #2f6f3e;
-  outline-offset: -2px;
+.block .handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
 }
 
-td.cell.readonly {
-  cursor: default;
+.block .handle.top {
+  top: 0;
+}
+
+.block .handle.bottom {
+  bottom: 0;
+}
+
+.block .label {
+  padding: 2px 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block .delete-btn {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: rgba(0, 0, 0, 0.15);
+  border: none;
+  border-radius: 3px;
+  width: 15px;
+  height: 15px;
+  line-height: 15px;
+  font-size: 11px;
+  padding: 0;
+  color: #333;
+  cursor: pointer;
+}
+
+.block:hover .delete-btn {
+  opacity: 1;
+}
+
+.block.draft {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.overview-cell {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px dashed transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #2f6f3e;
+}
+
+.overview-cell .tentative-count {
+  color: #9c7a1e;
+  font-weight: 500;
 }
 
 .hint {
