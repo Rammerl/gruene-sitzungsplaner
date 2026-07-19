@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
@@ -8,7 +8,8 @@ const HOURS_START = 8;
 const HOURS_END = 23; // exclusive upper boundary
 const HOUR_PX = 32;
 const COLUMN_HEIGHT = (HOURS_END - HOURS_START) * HOUR_PX;
-const CLICK_THRESHOLD_PX = 4;
+const CLICK_THRESHOLD_PX = 6;
+const MOBILE_QUERY = "(max-width: 700px)";
 
 type Category = "verfuegbar" | "nach_absprache" | "blockiert";
 
@@ -55,7 +56,17 @@ export default function SurveyView({ token }: { token: string }) {
   const [overviewBlocks, setOverviewBlocks] = useState<(Block & { memberName: string })[]>([]);
 
   const [draft, setDraft] = useState<Draft | null>(null);
-  const columnRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileDayIndex, setMobileDayIndex] = useState(0);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     loadSurvey();
@@ -170,14 +181,14 @@ export default function SurveyView({ token }: { token: string }) {
     await persistBlock(block.id, { category: next });
   }
 
-  function handleColumnMouseDown(e: React.MouseEvent<HTMLDivElement>, weekday: number) {
+  function handleColumnPointerDown(e: React.PointerEvent<HTMLDivElement>, weekday: number) {
     if (!selectedMemberId) return;
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
     const anchor = yToHour(e.clientY - rect.top);
     setDraft({ weekday, start: anchor, end: anchor + 1 });
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const current = yToHour(ev.clientY - rect.top);
       let start = Math.min(anchor, current);
       let end = Math.max(anchor, current);
@@ -186,8 +197,8 @@ export default function SurveyView({ token }: { token: string }) {
     }
 
     function onUp() {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
       setDraft((current) => {
         if (current) {
           createBlock(current.weekday, current.start, current.end, "verfuegbar");
@@ -196,11 +207,15 @@ export default function SurveyView({ token }: { token: string }) {
       });
     }
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }
 
-  function handleBlockMouseDown(e: React.MouseEvent, block: Block, mode: "move" | "resize-top" | "resize-bottom") {
+  function handleBlockPointerDown(
+    e: React.PointerEvent,
+    block: Block,
+    mode: "move" | "resize-top" | "resize-bottom"
+  ) {
     e.preventDefault();
     e.stopPropagation();
     const anchorY = e.clientY;
@@ -209,7 +224,7 @@ export default function SurveyView({ token }: { token: string }) {
     const duration = origEnd - origStart;
     let moved = false;
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const deltaPx = ev.clientY - anchorY;
       if (Math.abs(deltaPx) >= CLICK_THRESHOLD_PX) moved = true;
       const deltaHours = Math.round(deltaPx / HOUR_PX);
@@ -230,8 +245,8 @@ export default function SurveyView({ token }: { token: string }) {
     }
 
     function onUp() {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
       if (!moved) {
         cycleCategory(block);
       } else {
@@ -245,8 +260,8 @@ export default function SurveyView({ token }: { token: string }) {
       }
     }
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }
 
   const hourMarks = useMemo(() => {
@@ -255,9 +270,131 @@ export default function SurveyView({ token }: { token: string }) {
     return marks;
   }, []);
 
-  function categoryAt(list: { weekday: number; start_hour: number; end_hour: number; category: Category }[], weekday: number, hour: number) {
-    const found = list.find((b) => b.weekday === weekday && b.start_hour <= hour && hour < b.end_hour);
-    return found?.category ?? null;
+  const bestInfo = useMemo(() => {
+    const total = members.length;
+    if (view !== "overview" || total === 0) return { max: 0, ranges: [] as { weekday: number; start: number; end: number }[] };
+    const grid: number[][] = WEEKDAYS.map(() => Array(HOURS_END - HOURS_START).fill(0));
+    overviewBlocks.forEach((b) => {
+      if (b.category !== "verfuegbar") return;
+      for (let h = b.start_hour; h < b.end_hour; h++) {
+        if (h >= HOURS_START && h < HOURS_END) grid[b.weekday][h - HOURS_START]++;
+      }
+    });
+    let max = 0;
+    grid.forEach((row) => row.forEach((c) => { if (c > max) max = c; }));
+    if (max === 0) return { max: 0, ranges: [] };
+    const ranges: { weekday: number; start: number; end: number }[] = [];
+    grid.forEach((row, weekday) => {
+      let rangeStart: number | null = null;
+      for (let i = 0; i < row.length; i++) {
+        const h = HOURS_START + i;
+        if (row[i] === max) {
+          if (rangeStart === null) rangeStart = h;
+        } else if (rangeStart !== null) {
+          ranges.push({ weekday, start: rangeStart, end: h });
+          rangeStart = null;
+        }
+      }
+      if (rangeStart !== null) ranges.push({ weekday, start: rangeStart, end: HOURS_END });
+    });
+    return { max, ranges };
+  }, [overviewBlocks, members, view]);
+
+  function renderDayColumn(weekday: number, showHeader: boolean) {
+    const day = WEEKDAYS[weekday];
+    return (
+      <div key={day} className="day-col-wrap">
+        {showHeader && <div className="day-col-header">{day}</div>}
+        <div
+          className="day-col"
+          style={{ height: COLUMN_HEIGHT }}
+          onPointerDown={(e) => handleColumnPointerDown(e, weekday)}
+        >
+          {view === "edit" &&
+            blocks
+              .filter((b) => b.weekday === weekday)
+              .map((b) => (
+                <div
+                  key={b.id}
+                  className="block"
+                  style={{
+                    top: (b.start_hour - HOURS_START) * HOUR_PX,
+                    height: (b.end_hour - b.start_hour) * HOUR_PX,
+                    background: CATEGORY_COLOR[b.category],
+                  }}
+                  onPointerDown={(e) => handleBlockPointerDown(e, b, "move")}
+                >
+                  <div className="handle top" onPointerDown={(e) => handleBlockPointerDown(e, b, "resize-top")} />
+                  <div className="label">{CATEGORY_LABEL[b.category]}</div>
+                  <button
+                    className="delete-btn"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteBlock(b.id);
+                    }}
+                  >
+                    ×
+                  </button>
+                  <div
+                    className="handle bottom"
+                    onPointerDown={(e) => handleBlockPointerDown(e, b, "resize-bottom")}
+                  />
+                </div>
+              ))}
+
+          {view === "edit" && draft && draft.weekday === weekday && (
+            <div
+              className="block draft"
+              style={{
+                top: (draft.start - HOURS_START) * HOUR_PX,
+                height: (draft.end - draft.start) * HOUR_PX,
+                background: CATEGORY_COLOR.verfuegbar,
+              }}
+            />
+          )}
+
+          {view === "overview" &&
+            (() => {
+              const dayBlocks = overviewBlocks.filter((b) => b.weekday === weekday);
+              const cells = [];
+              for (let h = HOURS_START; h < HOURS_END; h++) {
+                const names: Record<Category, string[]> = { verfuegbar: [], nach_absprache: [], blockiert: [] };
+                dayBlocks.forEach((b) => {
+                  if (b.start_hour <= h && h < b.end_hour) names[b.category].push(b.memberName);
+                });
+                const total = members.length || 1;
+                const availableCount = names.verfuegbar.length;
+                const intensity = availableCount / total;
+                const bg = availableCount === 0 ? "transparent" : `rgba(76,175,110,${0.15 + intensity * 0.65})`;
+                const isBest = bestInfo.max > 0 && availableCount === bestInfo.max;
+                const title =
+                  [
+                    names.verfuegbar.length ? `Verfügbar: ${names.verfuegbar.join(", ")}` : "",
+                    names.nach_absprache.length ? `Nach Absprache: ${names.nach_absprache.join(", ")}` : "",
+                    names.blockiert.length ? `Blockiert: ${names.blockiert.join(", ")}` : "",
+                  ]
+                    .filter(Boolean)
+                    .join("\n") || "Keine Einträge";
+                cells.push(
+                  <div
+                    key={h}
+                    className={`overview-cell${isBest ? " best-cell" : ""}`}
+                    title={title}
+                    style={{ top: (h - HOURS_START) * HOUR_PX, height: HOUR_PX, background: bg }}
+                  >
+                    {availableCount > 0 && <span>{availableCount}</span>}
+                    {names.nach_absprache.length > 0 && (
+                      <span className="tentative-count">+{names.nach_absprache.length}</span>
+                    )}
+                  </div>
+                );
+              }
+              return cells;
+            })()}
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -325,6 +462,32 @@ export default function SurveyView({ token }: { token: string }) {
         ))}
       </div>
 
+      {view === "overview" && bestInfo.max > 0 && (
+        <div className="panel best-panel">
+          <strong>
+            Beste Termine ({bestInfo.max} von {members.length} verfügbar)
+          </strong>
+          <ul>
+            {bestInfo.ranges.map((r, i) => (
+              <li key={i}>
+                {WEEKDAYS[r.weekday]}, {r.start}:00–{r.end}:00 Uhr
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {view === "overview" && bestInfo.max === 0 && (
+        <p className="hint">Noch keine Verfügbarkeiten eingetragen.</p>
+      )}
+
+      {isMobile && (
+        <div className="mobile-day-switcher">
+          <button onClick={() => setMobileDayIndex((d) => (d + 6) % 7)}>‹</button>
+          <span>{WEEKDAYS[mobileDayIndex]}</span>
+          <button onClick={() => setMobileDayIndex((d) => (d + 1) % 7)}>›</button>
+        </div>
+      )}
+
       <div className="calendar-wrapper">
         <div className="calendar">
           <div className="time-gutter" style={{ height: COLUMN_HEIGHT }}>
@@ -335,103 +498,9 @@ export default function SurveyView({ token }: { token: string }) {
             ))}
           </div>
           <div className="day-columns">
-            {WEEKDAYS.map((day, weekday) => (
-              <div key={day} className="day-col-wrap">
-                <div className="day-col-header">{day}</div>
-                <div
-                  className="day-col"
-                  ref={(el) => {
-                    columnRefs.current[weekday] = el;
-                  }}
-                  style={{ height: COLUMN_HEIGHT, backgroundSize: `100% ${HOUR_PX}px` }}
-                  onMouseDown={(e) => handleColumnMouseDown(e, weekday)}
-                >
-                  {view === "edit" &&
-                    blocks
-                      .filter((b) => b.weekday === weekday)
-                      .map((b) => (
-                        <div
-                          key={b.id}
-                          className="block"
-                          style={{
-                            top: (b.start_hour - HOURS_START) * HOUR_PX,
-                            height: (b.end_hour - b.start_hour) * HOUR_PX,
-                            background: CATEGORY_COLOR[b.category],
-                          }}
-                          onMouseDown={(e) => handleBlockMouseDown(e, b, "move")}
-                        >
-                          <div className="handle top" onMouseDown={(e) => handleBlockMouseDown(e, b, "resize-top")} />
-                          <div className="label">{CATEGORY_LABEL[b.category]}</div>
-                          <button
-                            className="delete-btn"
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteBlock(b.id);
-                            }}
-                          >
-                            ×
-                          </button>
-                          <div
-                            className="handle bottom"
-                            onMouseDown={(e) => handleBlockMouseDown(e, b, "resize-bottom")}
-                          />
-                        </div>
-                      ))}
-
-                  {view === "edit" && draft && draft.weekday === weekday && (
-                    <div
-                      className="block draft"
-                      style={{
-                        top: (draft.start - HOURS_START) * HOUR_PX,
-                        height: (draft.end - draft.start) * HOUR_PX,
-                        background: CATEGORY_COLOR.verfuegbar,
-                      }}
-                    />
-                  )}
-
-                  {view === "overview" &&
-                    (() => {
-                      const dayBlocks = overviewBlocks.filter((b) => b.weekday === weekday);
-                      const cells = [];
-                      for (let h = HOURS_START; h < HOURS_END; h++) {
-                        const names: Record<Category, string[]> = { verfuegbar: [], nach_absprache: [], blockiert: [] };
-                        dayBlocks.forEach((b) => {
-                          if (b.start_hour <= h && h < b.end_hour) names[b.category].push(b.memberName);
-                        });
-                        const total = members.length || 1;
-                        const availableCount = names.verfuegbar.length;
-                        const intensity = availableCount / total;
-                        const bg =
-                          availableCount === 0
-                            ? "transparent"
-                            : `rgba(76,175,110,${0.15 + intensity * 0.65})`;
-                        const title = [
-                          names.verfuegbar.length ? `Verfügbar: ${names.verfuegbar.join(", ")}` : "",
-                          names.nach_absprache.length ? `Nach Absprache: ${names.nach_absprache.join(", ")}` : "",
-                          names.blockiert.length ? `Blockiert: ${names.blockiert.join(", ")}` : "",
-                        ]
-                          .filter(Boolean)
-                          .join("\n") || "Keine Einträge";
-                        cells.push(
-                          <div
-                            key={h}
-                            className="overview-cell"
-                            title={title}
-                            style={{ top: (h - HOURS_START) * HOUR_PX, height: HOUR_PX, background: bg }}
-                          >
-                            {availableCount > 0 && <span>{availableCount}</span>}
-                            {names.nach_absprache.length > 0 && (
-                              <span className="tentative-count">+{names.nach_absprache.length}</span>
-                            )}
-                          </div>
-                        );
-                      }
-                      return cells;
-                    })()}
-                </div>
-              </div>
-            ))}
+            {isMobile
+              ? renderDayColumn(mobileDayIndex, false)
+              : WEEKDAYS.map((_, weekday) => renderDayColumn(weekday, true))}
           </div>
         </div>
       </div>
