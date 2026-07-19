@@ -363,10 +363,16 @@ export default function SurveyView({ token }: { token: string }) {
                 dayBlocks.forEach((b) => {
                   if (b.start_hour <= h && h < b.end_hour) names[b.category].push(b.memberName);
                 });
-                const total = members.length || 1;
+                const total = members.length;
                 const availableCount = names.verfuegbar.length;
-                const intensity = availableCount / total;
-                const bg = availableCount === 0 ? "transparent" : `rgba(76,175,110,${0.15 + intensity * 0.65})`;
+                let bg = "transparent";
+                if (names.blockiert.length > 0) {
+                  bg = CATEGORY_COLOR.blockiert;
+                } else if (names.nach_absprache.length > 0) {
+                  bg = CATEGORY_COLOR.nach_absprache;
+                } else if (total > 0 && availableCount === total) {
+                  bg = CATEGORY_COLOR.verfuegbar;
+                }
                 const isBest = bestInfo.max > 0 && availableCount === bestInfo.max;
                 const title =
                   [

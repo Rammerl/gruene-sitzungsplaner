@@ -247,11 +247,11 @@ button.secondary:hover {
   gap: 4px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #2f6f3e;
+  color: #1a1a1a;
 }
 
 .overview-cell .tentative-count {
-  color: #9c7a1e;
+  color: #6b4e00;
   font-weight: 500;
 }
 
