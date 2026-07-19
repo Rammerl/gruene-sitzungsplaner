@@ -274,21 +274,27 @@ export default function SurveyView({ token }: { token: string }) {
     const total = members.length;
     if (view !== "overview" || total === 0) return { max: 0, ranges: [] as { weekday: number; start: number; end: number }[] };
     const grid: number[][] = WEEKDAYS.map(() => Array(HOURS_END - HOURS_START).fill(0));
+    const blocked: boolean[][] = WEEKDAYS.map(() => Array(HOURS_END - HOURS_START).fill(false));
     overviewBlocks.forEach((b) => {
-      if (b.category !== "verfuegbar") return;
       for (let h = b.start_hour; h < b.end_hour; h++) {
-        if (h >= HOURS_START && h < HOURS_END) grid[b.weekday][h - HOURS_START]++;
+        if (h < HOURS_START || h >= HOURS_END) continue;
+        if (b.category === "verfuegbar") grid[b.weekday][h - HOURS_START]++;
+        if (b.category === "blockiert") blocked[b.weekday][h - HOURS_START] = true;
       }
     });
     let max = 0;
-    grid.forEach((row) => row.forEach((c) => { if (c > max) max = c; }));
+    grid.forEach((row, weekday) =>
+      row.forEach((c, i) => {
+        if (!blocked[weekday][i] && c > max) max = c;
+      })
+    );
     if (max === 0) return { max: 0, ranges: [] };
     const ranges: { weekday: number; start: number; end: number }[] = [];
     grid.forEach((row, weekday) => {
       let rangeStart: number | null = null;
       for (let i = 0; i < row.length; i++) {
         const h = HOURS_START + i;
-        if (row[i] === max) {
+        if (row[i] === max && !blocked[weekday][i]) {
           if (rangeStart === null) rangeStart = h;
         } else if (rangeStart !== null) {
           ranges.push({ weekday, start: rangeStart, end: h });
@@ -373,7 +379,7 @@ export default function SurveyView({ token }: { token: string }) {
                 } else if (total > 0 && availableCount === total) {
                   bg = CATEGORY_COLOR.verfuegbar;
                 }
-                const isBest = bestInfo.max > 0 && availableCount === bestInfo.max;
+                const isBest = bestInfo.max > 0 && names.blockiert.length === 0 && availableCount === bestInfo.max;
                 const title =
                   [
                     names.verfuegbar.length ? `Verfügbar: ${names.verfuegbar.join(", ")}` : "",
