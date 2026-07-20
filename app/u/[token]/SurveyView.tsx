@@ -213,32 +213,81 @@ export default function SurveyView({ token }: { token: string }) {
 
   function handleColumnPointerDown(e: React.PointerEvent<HTMLDivElement>, weekday: number) {
     if (!selectedMemberId) return;
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const anchor = yToHour(e.clientY - rect.top, hoursStart, hoursEnd);
-    setDraft({ weekday, start: anchor, end: anchor + 1 });
+    const target = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
 
-    function onMove(ev: PointerEvent) {
-      const current = yToHour(ev.clientY - rect.top, hoursStart, hoursEnd);
-      let start = Math.min(anchor, current);
-      let end = Math.max(anchor, current);
-      if (end === start) end = start + 1;
-      setDraft({ weekday, start, end });
+    function beginDrag(initialY: number) {
+      const rect = target.getBoundingClientRect();
+      const anchor = yToHour(initialY - rect.top, hoursStart, hoursEnd);
+      setDraft({ weekday, start: anchor, end: anchor + 1 });
+
+      function onMove(ev: PointerEvent) {
+        const current = yToHour(ev.clientY - rect.top, hoursStart, hoursEnd);
+        let start = Math.min(anchor, current);
+        let end = Math.max(anchor, current);
+        if (end === start) end = start + 1;
+        setDraft({ weekday, start, end });
+      }
+
+      function finish() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", cancel);
+        setDraft((current) => {
+          if (current) {
+            createBlock(current.weekday, current.start, current.end, "verfuegbar");
+          }
+          return null;
+        });
+      }
+
+      function cancel() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", cancel);
+        setDraft(null);
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", cancel);
     }
 
-    function onUp() {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      setDraft((current) => {
-        if (current) {
-          createBlock(current.weekday, current.start, current.end, "verfuegbar");
-        }
-        return null;
-      });
+    if (e.pointerType !== "touch") {
+      e.preventDefault();
+      beginDrag(startY);
+      return;
     }
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    // Touch: require a brief hold before starting to draw, so a normal
+    // scroll swipe over the calendar isn't hijacked into creating a block.
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      settled = true;
+      cleanupPending();
+      beginDrag(startY);
+    }, 300);
+
+    function cleanupPending() {
+      window.clearTimeout(timer);
+      window.removeEventListener("pointermove", onPendingMove);
+      window.removeEventListener("pointerup", onPendingEnd);
+      window.removeEventListener("pointercancel", onPendingEnd);
+    }
+    function onPendingMove(ev: PointerEvent) {
+      if (settled) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (Math.hypot(dx, dy) > 10) cleanupPending();
+    }
+    function onPendingEnd() {
+      if (!settled) cleanupPending();
+    }
+
+    window.addEventListener("pointermove", onPendingMove);
+    window.addEventListener("pointerup", onPendingEnd);
+    window.addEventListener("pointercancel", onPendingEnd);
   }
 
   function handleBlockPointerDown(
@@ -246,52 +295,93 @@ export default function SurveyView({ token }: { token: string }) {
     block: Block,
     mode: "move" | "resize-top" | "resize-bottom"
   ) {
-    e.preventDefault();
     e.stopPropagation();
-    const anchorY = e.clientY;
     const origStart = block.start_hour;
     const origEnd = block.end_hour;
     const duration = origEnd - origStart;
-    let moved = false;
+    const startX = e.clientX;
+    const startY = e.clientY;
 
-    function onMove(ev: PointerEvent) {
-      const deltaPx = ev.clientY - anchorY;
-      if (Math.abs(deltaPx) >= CLICK_THRESHOLD_PX) moved = true;
-      const deltaHours = Math.round(deltaPx / HOUR_PX);
+    function begin(anchorY: number) {
+      let moved = false;
 
-      if (mode === "move") {
-        let newStart = origStart + deltaHours;
-        newStart = Math.max(hoursStart, Math.min(hoursEnd - duration, newStart));
-        updateBlockLocal(block.id, { start_hour: newStart, end_hour: newStart + duration });
-      } else if (mode === "resize-top") {
-        let newStart = origStart + deltaHours;
-        newStart = Math.max(hoursStart, Math.min(origEnd - 1, newStart));
-        updateBlockLocal(block.id, { start_hour: newStart });
-      } else if (mode === "resize-bottom") {
-        let newEnd = origEnd + deltaHours;
-        newEnd = Math.min(hoursEnd, Math.max(origStart + 1, newEnd));
-        updateBlockLocal(block.id, { end_hour: newEnd });
+      function onMove(ev: PointerEvent) {
+        const deltaPx = ev.clientY - anchorY;
+        if (Math.abs(deltaPx) >= CLICK_THRESHOLD_PX) moved = true;
+        const deltaHours = Math.round(deltaPx / HOUR_PX);
+
+        if (mode === "move") {
+          let newStart = origStart + deltaHours;
+          newStart = Math.max(hoursStart, Math.min(hoursEnd - duration, newStart));
+          updateBlockLocal(block.id, { start_hour: newStart, end_hour: newStart + duration });
+        } else if (mode === "resize-top") {
+          let newStart = origStart + deltaHours;
+          newStart = Math.max(hoursStart, Math.min(origEnd - 1, newStart));
+          updateBlockLocal(block.id, { start_hour: newStart });
+        } else if (mode === "resize-bottom") {
+          let newEnd = origEnd + deltaHours;
+          newEnd = Math.min(hoursEnd, Math.max(origStart + 1, newEnd));
+          updateBlockLocal(block.id, { end_hour: newEnd });
+        }
       }
+
+      function finish() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", finish);
+        if (!moved) {
+          cycleCategory(block);
+        } else {
+          setBlocks((prev) => {
+            const current = prev.find((b) => b.id === block.id);
+            if (current) {
+              persistBlock(block.id, { start_hour: current.start_hour, end_hour: current.end_hour });
+            }
+            return prev;
+          });
+        }
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", finish);
     }
 
-    function onUp() {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      if (!moved) {
-        cycleCategory(block);
-      } else {
-        setBlocks((prev) => {
-          const current = prev.find((b) => b.id === block.id);
-          if (current) {
-            persistBlock(block.id, { start_hour: current.start_hour, end_hour: current.end_hour });
-          }
-          return prev;
-        });
-      }
+    // Resize handles are small, deliberate targets — no hold delay needed even on touch.
+    if (e.pointerType !== "touch" || mode !== "move") {
+      e.preventDefault();
+      begin(startY);
+      return;
     }
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    // Moving a block on touch: require a brief hold first, so a scroll swipe
+    // that happens to start on top of a block still scrolls the page.
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      settled = true;
+      cleanupPending();
+      begin(startY);
+    }, 300);
+
+    function cleanupPending() {
+      window.clearTimeout(timer);
+      window.removeEventListener("pointermove", onPendingMove);
+      window.removeEventListener("pointerup", onPendingEnd);
+      window.removeEventListener("pointercancel", onPendingEnd);
+    }
+    function onPendingMove(ev: PointerEvent) {
+      if (settled) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (Math.hypot(dx, dy) > 10) cleanupPending();
+    }
+    function onPendingEnd() {
+      if (!settled) cleanupPending();
+    }
+
+    window.addEventListener("pointermove", onPendingMove);
+    window.addEventListener("pointerup", onPendingEnd);
+    window.addEventListener("pointercancel", onPendingEnd);
   }
 
   const hourMarks = useMemo(() => {

@@ -273,6 +273,7 @@ button.secondary:hover {
 
 .day-col {
   position: relative;
+  overflow: hidden;
   border-radius: var(--radius-sm);
   background-color: #fafaf8;
   background-image: repeating-linear-gradient(
@@ -284,7 +285,7 @@ button.secondary:hover {
   );
   cursor: crosshair;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .block {
@@ -297,7 +298,7 @@ button.secondary:hover {
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .block .handle {
@@ -306,6 +307,7 @@ button.secondary:hover {
   right: 0;
   height: 7px;
   cursor: ns-resize;
+  touch-action: none;
 }
 
 .block .handle.top {
