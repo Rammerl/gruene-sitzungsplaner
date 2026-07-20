@@ -307,7 +307,7 @@ export default function SurveyView({ token }: { token: string }) {
 
   const hourMarks = useMemo(() => {
     const marks = [];
-    for (let h = hoursStart; h < hoursEnd; h++) marks.push(h);
+    for (let h = hoursStart; h <= hoursEnd; h++) marks.push(h);
     return marks;
   }, [hoursStart, hoursEnd]);
 
@@ -588,17 +588,17 @@ export default function SurveyView({ token }: { token: string }) {
         </div>
       )}
 
+      <p className="hint range-caption">
+        Zeitraum: {hoursStart}:00 – {hoursEnd}:00 Uhr
+      </p>
+
       <div className="calendar-wrapper">
         <div className="calendar">
           <div className="time-gutter" style={{ height: HEADER_HEIGHT + columnHeight }}>
             <div className="gutter-header-spacer" style={{ height: HEADER_HEIGHT }} />
             <div className="hour-marks" style={{ height: columnHeight }}>
               {hourMarks.map((h) => (
-                <div
-                  key={h}
-                  className="hour-mark"
-                  style={{ top: (h - hoursStart) * HOUR_PX + HOUR_PX / 2 }}
-                >
+                <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
                   {h}:00
                 </div>
               ))}
