@@ -281,7 +281,7 @@ button.secondary:hover {
   );
   cursor: crosshair;
   user-select: none;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .block {
@@ -294,7 +294,7 @@ button.secondary:hover {
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   cursor: grab;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .block .handle {
@@ -443,5 +443,12 @@ button.secondary:hover {
 
   .day-col-wrap {
     min-width: 0;
+  }
+
+  /* Leave blank space beside the single mobile day column so a swipe
+     there scrolls the page instead of drawing on the calendar. */
+  .day-columns.mobile-single .day-col-wrap {
+    flex: 0 0 70%;
+    max-width: 70%;
   }
 }
