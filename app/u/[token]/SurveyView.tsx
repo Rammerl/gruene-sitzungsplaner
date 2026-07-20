@@ -594,8 +594,8 @@ export default function SurveyView({ token }: { token: string }) {
 
       <div className="calendar-wrapper">
         <div className="calendar">
-          <div className="time-gutter" style={{ height: HEADER_HEIGHT + columnHeight }}>
-            <div className="gutter-header-spacer" style={{ height: HEADER_HEIGHT }} />
+          <div className="time-gutter" style={{ height: (isMobile ? 0 : HEADER_HEIGHT) + columnHeight }}>
+            <div className="gutter-header-spacer" style={{ height: isMobile ? 0 : HEADER_HEIGHT }} />
             <div className="hour-marks" style={{ height: columnHeight }}>
               {hourMarks.map((h) => (
                 <div key={h} className="hour-mark" style={{ top: (h - hoursStart) * HOUR_PX }}>
