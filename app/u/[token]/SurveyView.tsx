@@ -386,7 +386,7 @@ export default function SurveyView({ token }: { token: string }) {
 
   const hourMarks = useMemo(() => {
     const marks = [];
-    for (let h = hoursStart; h <= hoursEnd; h++) marks.push(h);
+    for (let h = hoursStart; h < hoursEnd; h++) marks.push(h);
     return marks;
   }, [hoursStart, hoursEnd]);
 
@@ -675,8 +675,8 @@ export default function SurveyView({ token }: { token: string }) {
               {hourMarks.map((h) => (
                 <div
                   key={h}
-                  className={`hour-mark${h === hoursEnd ? " last" : ""}`}
-                  style={{ top: (h - hoursStart) * HOUR_PX }}
+                  className="hour-mark"
+                  style={{ top: (h - hoursStart) * HOUR_PX + HOUR_PX / 2 }}
                 >
                   {h}:00
                 </div>

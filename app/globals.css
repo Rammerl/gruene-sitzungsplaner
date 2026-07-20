@@ -241,12 +241,8 @@ button.secondary:hover {
   right: 8px;
   font-size: 0.7rem;
   color: var(--text-muted);
-  transform: translateY(2px);
+  transform: translateY(-50%);
   text-align: right;
-}
-
-.hour-marks .hour-mark.last {
-  transform: translateY(calc(-100% - 2px));
 }
 
 .day-columns {
