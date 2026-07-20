@@ -412,13 +412,15 @@ export default function SurveyView({ token }: { token: string }) {
                 });
                 const total = members.length;
                 const availableCount = names.verfuegbar.length;
+                const tentativeCount = names.nach_absprache.length;
                 let bg = "transparent";
                 if (names.blockiert.length > 0) {
                   bg = CATEGORY_COLOR.blockiert;
-                } else if (names.nach_absprache.length > 0) {
-                  bg = CATEGORY_COLOR.nach_absprache;
-                } else if (total > 0 && availableCount === total) {
-                  bg = CATEGORY_COLOR.verfuegbar;
+                } else if (total > 0 && (availableCount > 0 || tentativeCount > 0)) {
+                  const greenPct = (availableCount / total) * 100;
+                  const orangePct = (tentativeCount / total) * 100;
+                  const split = greenPct + orangePct;
+                  bg = `linear-gradient(to right, ${CATEGORY_COLOR.verfuegbar} 0%, ${CATEGORY_COLOR.verfuegbar} ${greenPct}%, ${CATEGORY_COLOR.nach_absprache} ${greenPct}%, ${CATEGORY_COLOR.nach_absprache} ${split}%, transparent ${split}%, transparent 100%)`;
                 }
                 const title =
                   [
@@ -434,12 +436,7 @@ export default function SurveyView({ token }: { token: string }) {
                     className="overview-cell"
                     title={title}
                     style={{ top: (h - hoursStart) * HOUR_PX, height: HOUR_PX, background: bg }}
-                  >
-                    {availableCount > 0 && <span>{availableCount}</span>}
-                    {names.nach_absprache.length > 0 && (
-                      <span className="tentative-count">+{names.nach_absprache.length}</span>
-                    )}
-                  </div>
+                  />
                 );
               }
               return cells;

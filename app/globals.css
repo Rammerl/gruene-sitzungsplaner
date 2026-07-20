@@ -356,18 +356,6 @@ button.secondary:hover {
   position: absolute;
   left: 0;
   right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.overview-cell .tentative-count {
-  color: #6b4e00;
-  font-weight: 500;
 }
 
 .best-panel ul {
