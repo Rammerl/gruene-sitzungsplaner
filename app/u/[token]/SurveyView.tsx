@@ -215,7 +215,7 @@ export default function SurveyView({ token }: { token: string }) {
     if (!selectedMemberId) return;
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
-    const anchor = yToHour(e.clientY - rect.top, hoursStart, hoursEnd);
+    const anchor = Math.min(yToHour(e.clientY - rect.top, hoursStart, hoursEnd), hoursEnd - 1);
     setDraft({ weekday, start: anchor, end: anchor + 1 });
 
     function onMove(ev: PointerEvent) {
