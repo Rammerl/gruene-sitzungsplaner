@@ -356,6 +356,30 @@ button.secondary:hover {
   position: absolute;
   left: 0;
   right: 0;
+  cursor: pointer;
+}
+
+.tap-tooltip {
+  position: fixed;
+  z-index: 50;
+  background: #1a1a1a;
+  color: white;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  max-width: 240px;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+
+.tap-tooltip.above {
+  transform: translate(-50%, -100%);
+}
+
+.tap-tooltip.below {
+  transform: translate(-50%, 0);
 }
 
 .best-panel ul {

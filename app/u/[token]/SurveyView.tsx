@@ -69,6 +69,29 @@ export default function SurveyView({ token }: { token: string }) {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDayIndex, setMobileDayIndex] = useState(0);
 
+  const [cellTooltip, setCellTooltip] = useState<{
+    x: number;
+    y: number;
+    placement: "above" | "below";
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!cellTooltip) return;
+    const timer = window.setTimeout(() => {
+      window.addEventListener("click", onOutsideClick);
+    }, 0);
+    function onOutsideClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.closest && target.closest(".overview-cell")) return;
+      setCellTooltip(null);
+    }
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("click", onOutsideClick);
+    };
+  }, [cellTooltip]);
+
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     setIsMobile(mq.matches);
@@ -436,6 +459,16 @@ export default function SurveyView({ token }: { token: string }) {
                     className="overview-cell"
                     title={title}
                     style={{ top: (h - hoursStart) * HOUR_PX, height: HOUR_PX, background: bg }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const placement = rect.top < 80 ? "below" : "above";
+                      setCellTooltip({
+                        x: rect.left + rect.width / 2,
+                        y: placement === "above" ? rect.top - 6 : rect.bottom + 6,
+                        placement,
+                        text: title,
+                      });
+                    }}
                   />
                 );
               }
@@ -614,6 +647,15 @@ export default function SurveyView({ token }: { token: string }) {
           Ziehen erstellt einen neuen Block, Ränder ziehen verändert die Länge, Block ziehen verschiebt ihn. Klick auf
           einen Block schaltet die Kategorie um.
         </p>
+      )}
+
+      {cellTooltip && (
+        <div
+          className={`tap-tooltip ${cellTooltip.placement}`}
+          style={{ left: cellTooltip.x, top: cellTooltip.y }}
+        >
+          {cellTooltip.text}
+        </div>
       )}
     </div>
   );
